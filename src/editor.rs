@@ -89,7 +89,6 @@ impl Editor {
     }
 
     fn draw_line(&mut self) -> anyhow::Result<()> {
-        
         Ok(())
     }
 
@@ -103,16 +102,20 @@ impl Editor {
                 Event::Key(e) => match self.handle_event(e.code)? {
                     Some(action) => match action {
                         Action::MoveUp => {
-                            self.cy -= 1;
+                            self.cy = self.cy.saturating_sub(1);
                         }
                         Action::MoveDown => {
-                            self.cy += 1;
+                            if self.cy < self.vheight - 1 {
+                                self.cy += 1;
+                            }
                         }
                         Action::MoveRight => {
-                            self.cx += 1;
+                            if self.cx < self.vwidth - 1{
+                                self.cx += 1;
+                            }
                         }
                         Action::MoveLeft => {
-                            self.cx -= 1;
+                            self.cx = self.cx.saturating_sub(1);
                         }
                         Action::Quite => {
                             break;
