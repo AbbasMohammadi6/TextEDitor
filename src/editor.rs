@@ -4,7 +4,7 @@ use anyhow::Ok;
 use crossterm::{
     cursor::MoveTo,
     event::{read, Event, KeyCode},
-    style::Print,
+    style::{Color, Print, SetForegroundColor, Stylize},
     terminal::{self, EnterAlternateScreen, LeaveAlternateScreen},
     ExecutableCommand,
 };
@@ -83,12 +83,38 @@ impl Editor {
     }
 
     fn draw(&mut self) -> anyhow::Result<()> {
+        self.draw_status_line()?;
         self.stdout.execute(MoveTo(self.cx, self.cy))?;
-        self.draw_line()?;
         Ok(())
     }
 
-    fn draw_line(&mut self) -> anyhow::Result<()> {
+    fn draw_status_line(&mut self) -> anyhow::Result<()> {
+        self.stdout.execute(MoveTo(0, self.vheight))?;
+        let mode = match self.mode {
+            Mode::Insert => "NORMAL",
+            Mode::Noraml => "INSERT",
+        };
+
+        // self.stdout.execute(
+        //     // Blue foreground
+        //     SetForegroundColor(Color::Blue),
+        //     // Red background
+        //     SetBackgroundColor(Color::Red),
+        //     // Print text
+        //     Print("Blue text on Red.".to_string()),
+        //     // Reset to default colors
+        //     ResetColor
+        // );
+
+        self.stdout.execute(SetForegroundColor(Color::Blue))?;
+        self.stdout.execute(Print(
+            mode.with(Color::Black).on(Color::Rgb{r: 124, g: 245, b: 255}),
+        ))?;
+        self.stdout.execute(Print(
+            "".with(Color::Black).on(Color::Rgb{r: 124, g: 245, b: 255}),
+        ))?;
+
+        // ""
         Ok(())
     }
 
@@ -110,7 +136,7 @@ impl Editor {
                             }
                         }
                         Action::MoveRight => {
-                            if self.cx < self.vwidth - 1{
+                            if self.cx < self.vwidth - 1 {
                                 self.cx += 1;
                             }
                         }
