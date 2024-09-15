@@ -89,30 +89,41 @@ impl Editor {
     }
 
     fn draw_status_line(&mut self) -> anyhow::Result<()> {
-        self.stdout.execute(MoveTo(0, self.vheight))?;
+        self.stdout.execute(MoveTo(1, self.vheight - 2))?;
         let mode = match self.mode {
             Mode::Insert => "NORMAL",
             Mode::Noraml => "INSERT",
         };
 
-        // self.stdout.execute(
-        //     // Blue foreground
-        //     SetForegroundColor(Color::Blue),
-        //     // Red background
-        //     SetBackgroundColor(Color::Red),
-        //     // Print text
-        //     Print("Blue text on Red.".to_string()),
-        //     // Reset to default colors
-        //     ResetColor
-        // );
+        let primary_color = Color::Rgb {
+            r: 124,
+            g: 245,
+            b: 255,
+        };
+        let gray_color = Color::Rgb {
+            r: 100,
+            g: 100,
+            b: 100,
+        };
+        let black_color = Color::Black;
+        let file_name = format!(" main.rs ");
+        let mode = format!(" {mode} ");
+        let chev_right = "";
+        let chev_left = "";
+        let span_len =
+            self.vwidth - file_name.len() as u16 + mode.len() as u16 + chev_right.len() as u16 * 2;
+        let empty_space = "";
 
-        self.stdout.execute(SetForegroundColor(Color::Blue))?;
-        self.stdout.execute(Print(
-            mode.with(Color::Black).on(Color::Rgb{r: 124, g: 245, b: 255}),
-        ))?;
-        self.stdout.execute(Print(
-            "".with(Color::Black).on(Color::Rgb{r: 124, g: 245, b: 255}),
-        ))?;
+        self.stdout
+            .execute(Print(mode.with(black_color).on(primary_color)))?;
+        self.stdout
+            .execute(Print(chev_right.with(primary_color).on(gray_color)))?;
+        self.stdout
+            .execute(Print(file_name.with(primary_color).on(gray_color)))?;
+        self.stdout
+            .execute(Print(chev_right.with(gray_color).on(black_color)))?;
+
+        self.stdout.execute(Print(empty_space.rapid_blink()));
 
         // ""
         Ok(())
