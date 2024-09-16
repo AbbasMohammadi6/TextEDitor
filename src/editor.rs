@@ -1,13 +1,15 @@
-use std::io::{stdout, Stdout};
+use std::{io::{stdout, Stdout}, u16};
 
 use anyhow::Ok;
 use crossterm::{
     cursor::MoveTo,
     event::{read, Event, KeyCode},
-    style::{Color, Print, SetForegroundColor, Stylize},
+    style::{Color, Print, Stylize},
     terminal::{self, EnterAlternateScreen, LeaveAlternateScreen},
     ExecutableCommand,
 };
+
+const STATUS_LINE_HEIGHT: u16 = 2;
 
 enum Mode {
     Insert,
@@ -100,32 +102,41 @@ impl Editor {
             g: 245,
             b: 255,
         };
-        let gray_color = Color::Rgb {
+        let light_gray_color = Color::Rgb {
             r: 100,
             g: 100,
             b: 100,
+        };
+        let dark_gray_color = Color::Rgb {
+            r: 30,
+            g: 30,
+            b: 30,
         };
         let black_color = Color::Black;
         let file_name = format!(" main.rs ");
         let mode = format!(" {mode} ");
         let chev_right = "";
         let chev_left = "";
-        let span_len =
-            self.vwidth - file_name.len() as u16 + mode.len() as u16 + chev_right.len() as u16 * 2;
-        let empty_space = "";
+        let cursor_position = format!(" {}:{} ", self.cx, self.cy);
+        let span_len = self.vwidth
+            - (file_name.len() as u16 + mode.len() as u16 + chev_right.len() as u16 * 2 + cursor_position.len() as u16);
+        let empty_space = format!("{:width$}", "", width = span_len as usize);
 
         self.stdout
             .execute(Print(mode.with(black_color).on(primary_color)))?;
         self.stdout
-            .execute(Print(chev_right.with(primary_color).on(gray_color)))?;
+            .execute(Print(chev_right.with(primary_color).on(light_gray_color)))?;
         self.stdout
-            .execute(Print(file_name.with(primary_color).on(gray_color)))?;
+            .execute(Print(file_name.with(primary_color).on(light_gray_color)))?;
         self.stdout
-            .execute(Print(chev_right.with(gray_color).on(black_color)))?;
+            .execute(Print(chev_right.with(light_gray_color).on(dark_gray_color)))?;
+        self.stdout
+            .execute(Print(empty_space.on(dark_gray_color)))?;
+        self.stdout
+            .execute(Print(chev_left.with(primary_color).on(dark_gray_color)))?;
+        self.stdout
+            .execute(Print(cursor_position.with(black_color).on(primary_color)))?;
 
-        self.stdout.execute(Print(empty_space.rapid_blink()));
-
-        // ""
         Ok(())
     }
 
@@ -142,7 +153,7 @@ impl Editor {
                             self.cy = self.cy.saturating_sub(1);
                         }
                         Action::MoveDown => {
-                            if self.cy < self.vheight - 1 {
+                            if self.cy < self.vheight - (1 + STATUS_LINE_HEIGHT) {
                                 self.cy += 1;
                             }
                         }
