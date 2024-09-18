@@ -1,4 +1,7 @@
-use std::{io::{stdout, Stdout}, u16};
+use std::{
+    io::{stdout, Stdout},
+    u16,
+};
 
 use anyhow::Ok;
 use crossterm::{
@@ -112,30 +115,53 @@ impl Editor {
             g: 30,
             b: 30,
         };
+        let is_samll = self.vwidth > 15;
+        let is_meduim = self.vwidth > 30;
+        let is_large = self.vwidth > 40;
+
         let black_color = Color::Black;
         let file_name = format!(" main.rs ");
         let mode = format!(" {mode} ");
         let chev_right = "";
         let chev_left = "";
         let cursor_position = format!(" {}:{} ", self.cx, self.cy);
-        let span_len = self.vwidth
-            - (file_name.len() as u16 + mode.len() as u16 + chev_right.len() as u16 * 2 + cursor_position.len() as u16);
-        let empty_space = format!("{:width$}", "", width = span_len as usize);
+        let empty_space = format!("{:width$}", "", width = self.vwidth as usize - 1);
 
-        self.stdout
-            .execute(Print(mode.with(black_color).on(primary_color)))?;
-        self.stdout
-            .execute(Print(chev_right.with(primary_color).on(light_gray_color)))?;
-        self.stdout
-            .execute(Print(file_name.with(primary_color).on(light_gray_color)))?;
-        self.stdout
-            .execute(Print(chev_right.with(light_gray_color).on(dark_gray_color)))?;
+        // background
         self.stdout
             .execute(Print(empty_space.on(dark_gray_color)))?;
-        self.stdout
-            .execute(Print(chev_left.with(primary_color).on(dark_gray_color)))?;
-        self.stdout
-            .execute(Print(cursor_position.with(black_color).on(primary_color)))?;
+
+        // mode
+        if is_samll {
+            self.stdout.execute(MoveTo(1, self.vheight - 2))?;
+            self.stdout
+                .execute(Print(mode.with(black_color).on(primary_color)))?;
+        }
+
+        if is_meduim {
+            // moving mode's right cursor its background is the same color of file_name
+            self.stdout
+                .execute(Print(chev_right.with(primary_color).on(light_gray_color)))?;
+
+            // file_name
+            self.stdout
+                .execute(Print(file_name.with(primary_color).on(light_gray_color)))?;
+            self.stdout
+                .execute(Print(chev_right.with(light_gray_color).on(dark_gray_color)))?;
+        }
+
+        // cursor position
+        if is_large {
+            self.stdout.execute(MoveTo(
+                self.vwidth - (chev_left.len() as u16 + cursor_position.len() as u16),
+                self.vheight - 2,
+            ))?;
+
+            self.stdout
+                .execute(Print(chev_left.with(primary_color).on(dark_gray_color)))?;
+            self.stdout
+                .execute(Print(cursor_position.with(black_color).on(primary_color)))?;
+        }
 
         Ok(())
     }
@@ -183,6 +209,11 @@ impl Editor {
                     },
                     None => (),
                 },
+                Event::Resize(_, _) => {
+                    let size = terminal::size()?;
+                    self.vwidth = size.0;
+                    self.vheight = size.1;
+                }
                 _ => (),
             }
         }
